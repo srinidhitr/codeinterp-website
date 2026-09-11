@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeInterp</title>
+<meta name="description" content="CodeInterp Inc. is building infrastructure for understanding what language models have learned, changing them with precision, and letting them keep learning.">
+<meta property="og:title" content="CodeInterp">
+<meta property="og:description" content="Make the machine legible. Infrastructure for understanding, correcting and continuously teaching language models.">
+<meta property="og:url" content="https://codeinterp.com/">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E89A2E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #F2F3F0;
+    --ink: #15171A;
+    --ink-2: #50565D;
+    --ink-3: #7A8087;
+    --rule: #D7DAD4;
+    --act: 236 158 48;        /* activation amber, as an rgb triplet */
+    --act-max: 0.82;          /* strongest highlight opacity */
+    --focus: #1F5FD1;
+
+    --display: "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --step--1: 0.8125rem;
+    --step-0: 1.0625rem;
+    --step-1: 1.375rem;
+    --step-2: 1.75rem;
+    --step-3: clamp(1.9rem, 3.4vw, 2.6rem);
+    --step-hero: clamp(3.1rem, 10vw, 7.75rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101214;
+      --ink: #ECEDE9;
+      --ink-2: #A5ABB1;
+      --ink-3: #737A81;
+      --rule: #272B2F;
+      --act: 242 172 72;
+      --act-max: 0.46;
+      --focus: #86AEFF;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #101214;
+    --ink: #ECEDE9;
+    --ink-2: #A5ABB1;
+    --ink-3: #737A81;
+    --rule: #272B2F;
+    --act: 242 172 72;
+    --act-max: 0.46;
+    --focus: #86AEFF;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 var(--step-0)/1.62 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4.5vw, 3.25rem);
+  }
+  a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: rgb(var(--act));
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+  a:hover { background: rgb(var(--act) / calc(var(--act-max) * 0.35)); }
+  a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* Header */
+  .top {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding-block: 1.5rem;
+  }
+  .mark {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    font: 500 1rem/1 var(--mono); letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+  .mark:hover { background: none; }
+  .mark .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: rgb(var(--act)); }
+  .top nav a {
+    font: 400 var(--step--1)/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-2); text-decoration: none;
+  }
+  .top nav a:hover { color: var(--ink); background: none; }
+
+  /* Hero */
+  .hero { padding-block: clamp(3.5rem, 11vw, 8.5rem) clamp(3rem, 7vw, 5.5rem); }
+  .eyebrow {
+    margin: 0 0 1.75rem;
+    font: 400 var(--step--1)/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  h1 {
+    margin: 0;
+    font: 400 var(--step-hero)/1.04 var(--display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    max-width: 12ch;
+  }
+  .tokens .t {
+    border-radius: 0.06em;
+    padding-block: 0.02em;
+    background-color: rgb(var(--act) / calc(var(--a) * var(--act-max)));
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: box-shadow 0.15s ease;
+  }
+  .tokens .t:hover { box-shadow: inset 0 -0.06em 0 rgb(var(--act)); }
+
+  .readout {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.1rem;
+    margin: 1.6rem 0 0;
+    font: 400 var(--step--1)/1.4 var(--mono);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout b { font-weight: 500; color: var(--ink-2); }
+  .scale {
+    position: relative; display: inline-block; width: 6.5rem; height: 0.5rem;
+    border-radius: 1px;
+    background: linear-gradient(to right, rgb(var(--act) / 0), rgb(var(--act) / var(--act-max)));
+    outline: 1px solid var(--rule);
+  }
+  .scale .tick {
+    position: absolute; top: -0.2rem; bottom: -0.2rem; width: 2px; margin-left: -1px;
+    left: calc(var(--v, 0.95) * 100%);
+    background: var(--ink);
+    transition: left 0.2s ease;
+  }
+  .lede {
+    margin: clamp(2.5rem, 5vw, 3.5rem) 0 0;
+    max-width: 36rem;
+    font: 400 var(--step-1)/1.5 var(--sans);
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+  .lede strong { font-weight: 500; color: var(--ink); }
+
+  /* Sections */
+  .row {
+    display: grid; gap: 1.25rem 3rem;
+    padding-block: clamp(3rem, 7vw, 5.25rem);
+    border-top: 1px solid var(--rule);
+  }
+  @media (min-width: 54rem) { .row { grid-template-columns: 12.5rem minmax(0, 1fr); } }
+  .label {
+    margin: 0; padding-top: 0.45rem;
+    font: 500 0.75rem/1.4 var(--mono); letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  h2 {
+    margin: 0;
+    font: 400 var(--step-3)/1.18 var(--display);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    max-width: 30ch;
+  }
+  .prose p { margin: 1.1rem 0 0; max-width: 38rem; color: var(--ink-2); text-wrap: pretty; }
+
+  .themes {
+    display: grid; gap: 2.25rem 2.5rem;
+    margin: 2.5rem 0 0; padding: 0; list-style: none;
+  }
+  @media (min-width: 46rem) { .themes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .themes li { display: grid; gap: 0.6rem; align-content: start; }
+  .themes h3 {
+    margin: 0;
+    font: 500 var(--step-1)/1.25 var(--display);
+    letter-spacing: -0.005em;
+  }
+  .themes p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
+
+  .principles {
+    display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem;
+    margin: 2.25rem 0 0;
+    font: italic 400 var(--step-2)/1.2 var(--display);
+  }
+
+  .person-name { margin: 0; font: 400 var(--step-3)/1.15 var(--display); letter-spacing: -0.015em; }
+  .person-role {
+    margin: 0.5rem 0 0;
+    font: 400 var(--step--1)/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .contact { display: grid; gap: 2.5rem 3rem; }
+  @media (min-width: 46rem) { .contact { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); } }
+  .contact .email {
+    display: inline-block; margin-top: 1.25rem;
+    font: 400 var(--step-2)/1.2 var(--display);
+    overflow-wrap: anywhere;
+  }
+  .contact h3 {
+    margin: 0 0 0.9rem;
+    font: 500 0.75rem/1.4 var(--mono); letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  address { font-style: normal; line-height: 1.7; color: var(--ink-2); }
+  address strong { font-weight: 500; color: var(--ink); }
+
+  /* Footer */
+  footer {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem 2rem;
+    padding-block: 2rem 2.5rem;
+    border-top: 1px solid var(--rule);
+    font: 400 var(--step--1)/1.5 var(--mono);
+    color: var(--ink-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scale .tick, .tokens .t { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <a class="mark" href="#top" aria-label="CodeInterp home"><span class="dot" aria-hidden="true"></span>codeinterp</a>
+    <nav aria-label="Primary"><a href="#contact">Contact</a></nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="headline">
+      <p class="eyebrow">Interpretability · Control · Continuous learning</p>
+      <h1 id="headline">
+        <span class="sr-only">Make the machine legible.</span>
+        <span class="tokens" aria-hidden="true"><span class="t" style="--a:.07;--i:0" data-a=".07">Make</span><span class="t" style="--a:.03;--i:1" data-a=".03"> the</span><span class="t" style="--a:.56;--i:2" data-a=".56"> machine</span><span class="t" style="--a:.95;--i:3" data-a=".95"> leg</span><span class="t" style="--a:.72;--i:4" data-a=".72">ible</span><span class="t" style="--a:.12;--i:5" data-a=".12">.</span></span>
+      </h1>
+      <p class="readout" aria-hidden="true">
+        <span>token <b id="act-tok">" leg"</b></span>
+        <span>activation <b id="act-val">0.95</b></span>
+        <span class="scale" id="act-scale"><span class="tick"></span></span>
+      </p>
+      <p class="lede">CodeInterp is building infrastructure for organizations that run their own language models: to <strong>see what a model has learned</strong>, <strong>change it with precision</strong>, and <strong>let it keep learning</strong>, with a record of every change.</p>
+    </section>
+
+    <section class="row" aria-labelledby="work-h">
+      <p class="label">What we work on</p>
+      <div>
+        <h2 id="work-h">Understanding where knowledge lives inside a model, and what it takes to change it.</h2>
+        <ul class="themes">
+          <li>
+            <h3>Interpretability</h3>
+            <p>Reading what a model knows: where its knowledge and behavior live, described in terms a person can inspect.</p>
+          </li>
+          <li>
+            <h3>Precise control</h3>
+            <p>Changing a model one thing at a time, locally, predictably and reversibly, rather than retraining the whole.</p>
+          </li>
+          <li>
+            <h3>Continuous learning</h3>
+            <p>Models that keep learning after deployment, with what they learn kept as records that can be inspected, consolidated and rolled back.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="row" aria-labelledby="why-h">
+      <p class="label">Why it matters</p>
+      <div class="prose">
+        <h2 id="why-h">Models are becoming infrastructure. They should be as inspectable as infrastructure.</h2>
+        <p>More organizations now run and adapt their own open-weight language models, and those models increasingly inform consequential decisions. The people responsible for them need to know what a model has learned, correct it when it is wrong, keep it current, and be able to show their work.</p>
+        <p>The tools to do that precisely are still missing. That is what we are building.</p>
+        <p class="principles" aria-label="Principles"><span>Legible.</span><span>Local.</span><span>Reversible.</span></p>
+      </div>
+    </section>
+
+    <section class="row" aria-labelledby="founder-h">
+      <p class="label">Founder</p>
+      <div class="prose">
+        <h2 id="founder-h" class="person-name">Srinidhi Ramamurthy</h2>
+        <p class="person-role">Founder &amp; CEO</p>
+        <p>Srinidhi works on interpretability, spectral and random-matrix methods, and the internals of large language models, drawing on a decade of building applied-AI products and teams.</p>
+        <p><a href="https://www.linkedin.com/in/srinidhi-ramamurthy-a98622133">LinkedIn</a></p>
+      </div>
+    </section>
+
+    <section class="row" id="contact" aria-labelledby="contact-h">
+      <p class="label">Contact</p>
+      <div class="contact">
+        <div class="prose">
+          <h2 id="contact-h">Get in touch.</h2>
+          <p>We would like to hear from teams that run their own models, and from researchers working on related problems.</p>
+          <a class="email" href="mailto:hello@codeinterp.com">hello@codeinterp.com</a>
+        </div>
+        <div>
+          <h3>Company</h3>
+          <address>
+            <strong>CodeInterp Inc.</strong><br>
+            710 Lakeway Drive<br>
+            Suite 200 PMB#17606554<br>
+            Sunnyvale, CA 94085
+          </address>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 CodeInterp Inc.</span>
+    <span>Sunnyvale, California</span>
+  </footer>
+
+</div>
+<script>
+  (function () {
+    var tokens = document.querySelectorAll('.tokens .t');
+    var tok = document.getElementById('act-tok');
+    var val = document.getElementById('act-val');
+    var scale = document.getElementById('act-scale');
+    var peak = tokens[3];
+    function show(t) {
+      var a = parseFloat(t.dataset.a);
+      tok.textContent = '"' + t.textContent + '"';
+      val.textContent = a.toFixed(2);
+      scale.style.setProperty('--v', a);
+    }
+    tokens.forEach(function (t) {
+      t.addEventListener('mouseenter', function () { show(t); });
+    });
+    document.querySelector('.tokens').addEventListener('mouseleave', function () { show(peak); });
+  })();
+</script>
+</body>
+</html>
